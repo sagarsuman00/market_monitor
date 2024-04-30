@@ -11,6 +11,7 @@ import requests
 indices = {'Nifty midcap 50': 'in%3Bccx', "Nifty 50": 'in%3BNSX', "Nifty bank":"in%3Bnbx"}
 
 def get_last_day_value(Scrip):
+    Scrip = Scrip.replace('&', '%26')
     t = datetime.now() - timedelta(days=1)
     yesterday = calendar.timegm(t.timetuple()) - 19800
     NumOfCandles = 1
@@ -27,6 +28,9 @@ def get_last_day_value(Scrip):
     y_value = 0
     if response.status_code == 200:
         data = json.loads(response.text)
+        if 'error' in data['s']:
+            messagebox.showerror("Error")
+            return -1
         data.pop("s")
         df = pd.DataFrame(data)
         return df.at[0, 'c']
@@ -72,6 +76,9 @@ class FloatingWidgetApp:
         # Add callback for dropdown selection
         self.dropdown.bind("<<ComboboxSelected>>", self.dropdown_callback)
 
+        # Ensure the widget is always displayed but not focused
+        #self.master.overrideredirect(True)
+        #self.master.grab_set()
         # Start the periodic update of label1
         self.update_label1()
 
@@ -100,14 +107,18 @@ class FloatingWidgetApp:
             self.label1.config(text='')
         change = (t_value - y_value)/y_value
         string = f"{t_value}, {change*100:.2f}%"
-        self.label1.config(text=string)
+        if change >= 0:
+            color = 'green'
+        else:
+            color = 'red'
+        self.label1.config(text=string, fg=color)
         #self.label2.config(text="Another text")
 
     def update_label1(self):
         # Update label1 with fresh data
         self.get_data(Scrip)
         # Schedule the next update after 1 minute (60000 milliseconds)
-        self.master.after(10000, self.update_label1)
+        self.master.after(5000, self.update_label1)
 
     def on_enter_pressed(self, event):
         # Call a function when Enter key is pressed in the textbox
