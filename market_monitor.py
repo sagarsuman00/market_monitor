@@ -16,22 +16,22 @@ class Market:
     def __init__(self, Scrip=None):
         self.Scrip = Scrip
         if self.Scrip:
-            self.y_value = self.get_last_day_value(self.Scrip)
+            self.y_value = self.get_last_day_value()
 
-    def get_last_day_value(self, Scrip):
-        Scrip = Scrip.replace('&', '%26')
+    def get_last_day_value(self):
+        Scrip = self.Scrip.replace('&', '%26')
         t = datetime.now() - timedelta(days=1)
         yesterday = calendar.timegm(t.timetuple()) - 19800
-        value = self.get_response(Scrip, '1D', yesterday)
+        value = self.get_response('1D', yesterday)
         return value
 
-    def get_current_value(self, Scrip):
+    def get_current_value(self):
         t = datetime.now()
         Time = calendar.timegm(t.timetuple()) - 19800
-        return self.get_response(Scrip, '1',Time)
+        return self.get_response('1',Time)
 
-    def get_response(self, Scrip, period, Time):
-        Scrip = Scrip.replace('&', '%26')
+    def get_response(self, period, Time):
+        Scrip = self.Scrip.replace('&', '%26')
         NumOfCandles = 1
         if Scrip in indices.values():
             url = f"https://priceapi.moneycontrol.com//techCharts/indianMarket/index/history?symbol={Scrip}&resolution={period}&from=1&to={Time}&countback=1&currencyCode=INR"
@@ -70,8 +70,8 @@ class WidgetItem:
             self.market.Scrip = selected.upper()
             if self.market.Scrip not in stocks:
                 stocks.append(self.market.Scrip)
-        self.market.y_value = self.market.get_last_day_value(self.market.Scrip)
-        self.get_data()
+        self.market.y_value = self.market.get_last_day_value()
+        self.update_label()
 
     def get_dropdown_text(self, event):
         selected = self.dropdown.get()
@@ -81,17 +81,17 @@ class WidgetItem:
             self.market.Scrip = selected.upper()
             if self.market.Scrip not in stocks:
                 stocks.append(self.market.Scrip)
-        self.market.y_value = self.market.get_last_day_value(self.market.Scrip)
-        self.get_data()
+        self.market.y_value = self.market.get_last_day_value()
+        self.update_label()
 
-    def update_suggestions(self, event):
+    def update_dropdown_suggestions(self, event):
         current_input = self.dropdown.get().lower()
         suggestions = [option for option in stocks if current_input in option.lower()]
         self.dropdown['values'] = suggestions
 
 
-    def get_data(self):
-        t_value = self.market.get_current_value(self.market.Scrip)
+    def update_label(self):
+        t_value = self.market.get_current_value()
         if t_value == -1:
             self.label.config(text='')
         change = (t_value - self.market.y_value)/self.market.y_value
@@ -111,11 +111,11 @@ class FloatingWidgetApp:
 
         self.widget_groups = []
         # Create a frame for the widget
-        self.create_group()
+        self.create_first_group()
         #self.master.attributes("-topmost", True)
         self.update_labels()
 
-    def create_group(self):
+    def create_first_group(self):
         widget_item = WidgetItem(self.master)
         group_frame = tk.Frame(self.master, bg='#f0f0f0', width=600, height=100, borderwidth=1, relief='groove')
         group_frame.pack(padx=10, pady=2, anchor='w')
@@ -135,7 +135,7 @@ class FloatingWidgetApp:
         dropdown.grid(row=0, column=0)
 
         # Bind the <KeyRelease> event to update suggestions
-        dropdown.bind("<KeyRelease>", widget_item.update_suggestions)
+        dropdown.bind("<KeyRelease>", widget_item.update_dropdown_suggestions)
 
         # Create an "Add" button inside the group frame
         add_button = tk.Button(group_frame, text="+", padx=20, command=lambda: self.add_group(widget_item))
@@ -186,7 +186,7 @@ class FloatingWidgetApp:
         dropdown.grid(row=0, column=0)
 
         # Bind the <KeyRelease> event to update suggestions
-        dropdown.bind("<KeyRelease>", widget_item.update_suggestions)
+        dropdown.bind("<KeyRelease>", widget_item.update_dropdown_suggestions)
 
         # Create an "Add" button inside the new group frame
         add_button = tk.Button(new_group_frame, text="+", command=lambda: self.add_group(widget_item))
@@ -227,7 +227,7 @@ class FloatingWidgetApp:
         # Update labels with current time every 5 seconds
         for widget_item in self.widget_groups:
             if widget_item.market.Scrip:
-                widget_item.get_data()
+                widget_item.update_label()
         # Schedule next update after 5 seconds
         self.master.after(1000, self.update_labels)
 
@@ -236,25 +236,11 @@ class FloatingWidgetApp:
         out_file = open("data.json", "w")
         json.dump(data, out_file, indent=4)
 
-    def on_enter_pressed(self, event):
-        # Call a function when Enter key is pressed in the textbox
-        global y_value, Scrip
-        entered_text = self.textbox.get()#.upper()  # Get text from the textbox
-        #self.textbox.delete(0, tk.END)
-        #self.textbox.insert(0, entered_text)
-        Scrip = entered_text
-        y_value = get_last_day_value(Scrip)
-        self.get_data(Scrip)
-        # Add your function call here
-
     def convert_to_uppercase(self, event):
         # Convert the text in the entry widget to uppercase
         text = self.textbox.get().upper()
         self.textbox.delete(0, tk.END)
         self.textbox.insert(0, text)
-    #def select_text(self, event):
-    #    # Select text in the textbox when it receives focus
-    #    self.textbox.tag_add("sel", "1.0", "end")
 
 def main():
     root = tk.Tk()
