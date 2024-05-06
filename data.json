@@ -1,0 +1,23 @@
+{
+  "indices":
+    {
+      "Nifty midcap 50": "in%3Bccx",
+      "Nifty 50": "in%3BNSX",
+      "Nifty bank":"in%3Bnbx"
+    },
+  "stocks":
+    [
+      "TATAMOTORS",
+      "HAL",
+      "ASHOKLEY",
+      "ZENTEC",
+      "M&M",
+      "SBIN",
+      "ACE",
+      "SFL",
+      "BHEL",
+      "ITC"
+    ]
+}
+
+ 
