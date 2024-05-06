@@ -12,6 +12,28 @@ data = json.load(open("data.json"))
 indices = data["indices"]
 stocks = data["stocks"]
 stocks.sort()
+
+def custom_messagebox(title, message):
+    # Create a Toplevel window
+    popup = tk.Toplevel()
+    popup.title(title)
+    popup.resizable(False, False)
+
+    # Create a label to display the message
+    label = tk.Label(popup, text=message, font=("Arial", 10))
+    label.pack(padx=20, pady=10)
+
+    # Create an OK button to close the popup
+    ok_button = tk.Button(popup, text="OK", command=popup.destroy)
+    ok_button.pack(pady=10)
+
+    # Make sure the popup window grabs the focus
+    popup.focus_set()
+    popup.grab_set()
+
+    # Wait for the popup to be closed
+    popup.wait_window()
+
 class Market:
     def __init__(self, Scrip=None):
         self.Scrip = Scrip
@@ -48,8 +70,9 @@ class Market:
         if response.status_code == 200:
             data = json.loads(response.text)
             if 'error' in data['s']:
-                messagebox.showerror("Error")
-                return -1
+                self.Scrip = None
+                custom_messagebox("Error", "Invalid Stock")
+                return None
             data.pop("s")
             df = pd.DataFrame(data)
             return df.at[0, 'c']
@@ -68,9 +91,9 @@ class WidgetItem:
             self.market.Scrip = indices[selected]
         else:
             self.market.Scrip = selected.upper()
-            if self.market.Scrip not in stocks:
-                stocks.append(self.market.Scrip)
         self.market.y_value = self.market.get_last_day_value()
+        if self.market.y_value and self.market.Scrip not in stocks:
+            stocks.append(self.market.Scrip)
         self.update_label()
 
     def get_dropdown_text(self, event):
@@ -79,9 +102,9 @@ class WidgetItem:
             self.market.Scrip = indices[selected]
         else:
             self.market.Scrip = selected.upper()
-            if self.market.Scrip not in stocks:
-                stocks.append(self.market.Scrip)
         self.market.y_value = self.market.get_last_day_value()
+        if self.market.y_value and self.market.Scrip not in stocks:
+            stocks.append(self.market.Scrip)
         self.update_label()
 
     def update_dropdown_suggestions(self, event):
@@ -93,16 +116,17 @@ class WidgetItem:
 
 
     def update_label(self):
-        t_value = self.market.get_current_value()
-        if t_value == -1:
+        if not self.market.y_value:
             self.label.config(text='')
-        change = (t_value - self.market.y_value)/self.market.y_value
-        string = f"{t_value}, {change*100:.2f}%"
-        if change >= 0:
-            color = 'green'
         else:
-            color = 'red'
-        self.label.config(text=string, fg=color)
+            t_value = self.market.get_current_value()
+            change = (t_value - self.market.y_value)/self.market.y_value
+            string = f"{t_value}, {change*100:.2f}%"
+            if change >= 0:
+                color = 'green'
+            else:
+                color = 'red'
+            self.label.config(text=string, fg=color)
 
 class FloatingWidgetApp:
     def __init__(self, master):
@@ -156,7 +180,7 @@ class FloatingWidgetApp:
         new_group_frame = tk.Frame(self.master, bg='#f0f0f0', width=600, height=100, borderwidth=1, relief='groove')
         new_group_frame.pack(padx=10, pady=2, anchor='w')
 
-        label = tk.Label(new_group_frame, text="0", width=30, padx=10)
+        label = tk.Label(new_group_frame, text="", width=30, padx=10)
         label.grid(row=0, column=1)
 
         selected_option = tk.StringVar()
