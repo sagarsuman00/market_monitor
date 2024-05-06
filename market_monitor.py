@@ -25,7 +25,7 @@ class Market:
         value = self.get_response(Scrip, '1D', yesterday)
         return value
 
-    def getdata(self, Scrip):
+    def get_current_value(self, Scrip):
         t = datetime.now()
         Time = calendar.timegm(t.timetuple()) - 19800
         return self.get_response(Scrip, '1',Time)
@@ -84,8 +84,14 @@ class WidgetItem:
         self.market.y_value = self.market.get_last_day_value(self.market.Scrip)
         self.get_data()
 
+    def update_suggestions(self, event):
+        current_input = self.dropdown.get().lower()
+        suggestions = [option for option in stocks if current_input in option.lower()]
+        self.dropdown['values'] = suggestions
+
+
     def get_data(self):
-        t_value = self.market.getdata(self.market.Scrip)
+        t_value = self.market.get_current_value(self.market.Scrip)
         if t_value == -1:
             self.label.config(text='')
         change = (t_value - self.market.y_value)/self.market.y_value
@@ -129,7 +135,7 @@ class FloatingWidgetApp:
         dropdown.grid(row=0, column=0)
 
         # Bind the <KeyRelease> event to update suggestions
-        #dropdown.bind("<KeyRelease>", self.update_suggestions)
+        dropdown.bind("<KeyRelease>", widget_item.update_suggestions)
 
         # Create an "Add" button inside the group frame
         add_button = tk.Button(group_frame, text="+", padx=20, command=lambda: self.add_group(widget_item))
@@ -159,12 +165,6 @@ class FloatingWidgetApp:
         ## Start the periodic update of label1
         #self.update_label1()
 
-    #def update_suggestions(self, event):
-    #    current_input = self.dropdown.get().lower()
-    #    suggestions = [option for option in self.all_options if current_input in option.lower()]
-    #    self.dropdown['values'] = suggestions
-    #    #self.dropdown.event_generate("<Button-1>")
-
     def add_group(self, parent):
         # Create a new group frame
         widget_item = WidgetItem(self.master)
@@ -186,7 +186,7 @@ class FloatingWidgetApp:
         dropdown.grid(row=0, column=0)
 
         # Bind the <KeyRelease> event to update suggestions
-        #dropdown.bind("<KeyRelease>", self.update_suggestions)
+        dropdown.bind("<KeyRelease>", widget_item.update_suggestions)
 
         # Create an "Add" button inside the new group frame
         add_button = tk.Button(new_group_frame, text="+", command=lambda: self.add_group(widget_item))
