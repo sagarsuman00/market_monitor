@@ -10,7 +10,8 @@ import requests
 
 data = json.load(open("data.json"))
 indices = data["indices"]
-stocks = set(data["stocks"])
+stocks = data["stocks"]
+stocks.sort()
 class Market:
     def __init__(self, Scrip=None):
         self.Scrip = Scrip
@@ -56,7 +57,7 @@ class Market:
 class WidgetItem:
     def __init__(self, master):
         self.group_frame = tk.Frame(master, bg='#f0f0f0', width=600, height=100, borderwidth=1, relief='groove')
-        self.label = tk.Label(self.group_frame, text="22000", padx=10, width=30)
+        self.label = tk.Label(self.group_frame, text="", padx=10, width=30)
         self.selected_option = tk.StringVar()
         self.dropdown = ttk.Combobox(self.group_frame, textvariable=self.selected_option)
         self.market = Market()
@@ -67,7 +68,8 @@ class WidgetItem:
             self.market.Scrip = indices[selected]
         else:
             self.market.Scrip = selected.upper()
-            stocks.add(self.market.Scrip)
+            if self.market.Scrip not in stocks:
+                stocks.append(self.market.Scrip)
         self.market.y_value = self.market.get_last_day_value(self.market.Scrip)
         self.get_data()
 
@@ -77,7 +79,8 @@ class WidgetItem:
             self.market.Scrip = indices[selected]
         else:
             self.market.Scrip = selected.upper()
-            stocks.add(self.market.Scrip)
+            if self.market.Scrip not in stocks:
+                stocks.append(self.market.Scrip)
         self.market.y_value = self.market.get_last_day_value(self.market.Scrip)
         self.get_data()
 
@@ -115,7 +118,6 @@ class FloatingWidgetApp:
         label.grid(row=0, column=1)
         # Initialize available options for the Combobox
         self.indices_options = list(indices.keys())
-        self.stock_options = list(stocks)
 
         # Create a Combobox with suggestions inside the group frame
         selected_option = tk.StringVar()
@@ -180,7 +182,7 @@ class FloatingWidgetApp:
         dropdown = ttk.Combobox(new_group_frame, textvariable=selected_option)
         dropdown.bind("<<ComboboxSelected>>", widget_item.dropdown_callback)
         dropdown.bind("<Return>", widget_item.get_dropdown_text)
-        dropdown['values'] = self.stock_options
+        dropdown['values'] = sorted(stocks)
         dropdown.grid(row=0, column=0)
 
         # Bind the <KeyRelease> event to update suggestions
@@ -230,8 +232,7 @@ class FloatingWidgetApp:
         self.master.after(1000, self.update_labels)
 
     def on_close(self, event):
-        data["stocks"] = list(stocks)
-        data["stocks"].sort()
+        data["stocks"] = sorted(stocks)
         out_file = open("data.json", "w")
         json.dump(data, out_file, indent=4)
 
