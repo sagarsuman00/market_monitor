@@ -8,11 +8,12 @@ from tkinter import ttk
 from tkinter import messagebox
 import requests
 
-indices = json.load(open("data.json"))["indices"]
-stocks = json.load(open("data.json"))["stocks"]
+data = json.load(open("data.json"))
+indices = data["indices"]
+stocks = set(data["stocks"])
 class Market:
-    def __init__(self):
-        self.Scrip = None #indices['Nifty 50']
+    def __init__(self, Scrip=None):
+        self.Scrip = Scrip
         if self.Scrip:
             self.y_value = self.get_last_day_value(self.Scrip)
 
@@ -65,7 +66,8 @@ class WidgetItem:
         if selected not in stocks:
             self.market.Scrip = indices[selected]
         else:
-            self.market.Scrip = selected
+            self.market.Scrip = selected.upper()
+            stocks.add()
         self.market.y_value = self.market.get_last_day_value(self.market.Scrip)
         self.get_data()
 
@@ -74,7 +76,8 @@ class WidgetItem:
         if selected in list(indices.keys()):
             self.market.Scrip = indices[selected]
         else:
-            self.market.Scrip = selected
+            self.market.Scrip = selected.upper()
+            stocks.add(self.market.Scrip)
         self.market.y_value = self.market.get_last_day_value(self.market.Scrip)
         self.get_data()
 
@@ -95,6 +98,7 @@ class FloatingWidgetApp:
         self.market = Market()
         self.master = master
         master.title("Market Monitor")
+        master.bind("<Destroy>", self.on_close)
 
         self.widget_groups = []
         # Create a frame for the widget
@@ -111,12 +115,13 @@ class FloatingWidgetApp:
         label.grid(row=0, column=1)
         # Initialize available options for the Combobox
         self.indices_options = list(indices.keys())
-        self.stock_options = stocks
+        self.stock_options = list(stocks)
 
         # Create a Combobox with suggestions inside the group frame
         selected_option = tk.StringVar()
         dropdown = ttk.Combobox(group_frame, textvariable=selected_option)
         dropdown['values'] = self.indices_options
+        dropdown.set("Nifty 50")
         dropdown.bind("<<ComboboxSelected>>", widget_item.dropdown_callback)
         dropdown.bind("<Return>", widget_item.get_dropdown_text)
         dropdown.grid(row=0, column=0)
@@ -134,7 +139,7 @@ class FloatingWidgetApp:
         widget_item.label = label
         widget_item.dropdown = dropdown
         widget_item.selected_option = selected_option
-        widget_item.market = Market()
+        widget_item.market = Market(indices["Nifty 50"])
         self.widget_groups.append(widget_item)
 
         ## Bind mouse events to allow dragging the widget
@@ -222,7 +227,12 @@ class FloatingWidgetApp:
             if widget_item.market.Scrip:
                 widget_item.get_data()
         # Schedule next update after 5 seconds
-        self.master.after(5000, self.update_labels)
+        self.master.after(1000, self.update_labels)
+
+    def on_close(self, event):
+        data["stocks"] = list(stocks)
+        out_file = open("data.json", "w")
+        json.dump(data, out_file, indent=4)
 
     def on_enter_pressed(self, event):
         # Call a function when Enter key is pressed in the textbox
