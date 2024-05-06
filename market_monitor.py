@@ -67,7 +67,7 @@ class WidgetItem:
             self.market.Scrip = indices[selected]
         else:
             self.market.Scrip = selected.upper()
-            stocks.add()
+            stocks.add(self.market.Scrip)
         self.market.y_value = self.market.get_last_day_value(self.market.Scrip)
         self.get_data()
 
@@ -231,6 +231,7 @@ class FloatingWidgetApp:
 
     def on_close(self, event):
         data["stocks"] = list(stocks)
+        data["stocks"].sort()
         out_file = open("data.json", "w")
         json.dump(data, out_file, indent=4)
 
