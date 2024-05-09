@@ -3,6 +3,8 @@ This is a small but handy widget to monitor Indian stocks.
 It shows realtime value of a stock/index.
 No need to keep checking your phone all time. You can have this tool running alongside your work.
 
+![image](https://github.com/sagarsuman00/market_monitor/assets/26338533/7d4dd8e3-70b6-4a0f-9248-59ddb7554ab1)
+
 # Features
 - Gets realtime data
 - Add/remove stocks
