@@ -11,6 +11,7 @@ No need to keep checking your phone all time. You can have this tool running alo
 - Suggests stock name based on previous inputs
 
 # Installation
+## Ubuntu
 Just clone the repo and run with Python
 
 ```
