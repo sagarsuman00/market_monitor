@@ -2,11 +2,12 @@ import tkinter as tk
 import json
 import time
 import calendar
+from tkinter import ttk
 from datetime import datetime, timedelta
 import pandas as pd
-from tkinter import ttk
 from tkinter import messagebox
 import requests
+from PIL import Image, ImageTk
 
 data = json.load(open("data.json"))
 indices = data["indices"]
@@ -50,7 +51,12 @@ class Market:
     def get_current_value(self):
         t = datetime.now()
         Time = calendar.timegm(t.timetuple()) - 19800
-        return self.get_response('1',Time)
+        val = self.get_response('1',Time)
+        if not val: #sometimes server don't give data
+            t = datetime.now()
+            Time = calendar.timegm(t.timetuple()) - 19800
+            val = self.get_response('1',Time)
+        return val
 
     def get_response(self, period, Time):
         Scrip = self.Scrip.replace('&', '%26')
@@ -67,15 +73,18 @@ class Market:
         response = requests.get(url, headers=headers)
 
         df = None
-        if response.status_code == 200:
-            data = json.loads(response.text)
-            if 'error' in data['s']:
-                self.Scrip = None
-                custom_messagebox("Error", "Invalid Stock")
-                return None
-            data.pop("s")
-            df = pd.DataFrame(data)
-            return df.at[0, 'c']
+        try:
+            if response.status_code == 200:
+                data = json.loads(response.text)
+                if 'error' in data['s']:
+                    self.Scrip = None
+                    custom_messagebox("Error", "Invalid Stock")
+                    return None
+                data.pop("s")
+                df = pd.DataFrame(data)
+                return df.at[0, 'c']
+        except Exception as e:
+            return None
 
 class WidgetItem:
     def __init__(self, master):
@@ -119,14 +128,19 @@ class WidgetItem:
         if not self.market.y_value:
             self.label.config(text='')
         else:
+
             t_value = self.market.get_current_value()
-            change = (t_value - self.market.y_value)/self.market.y_value
-            string = f"{t_value}, {change*100:.2f}%"
-            if change >= 0:
-                color = 'green'
-            else:
-                color = 'red'
-            self.label.config(text=string, fg=color)
+            try:
+                change = (t_value - self.market.y_value)/self.market.y_value
+                string = f"{t_value}, {change*100:.2f}%"
+                if change >= 0:
+                    color = 'green'
+                else:
+                    color = 'red'
+                self.label.config(text=string, fg=color)
+            except Exception as e:
+                print(f"Exception: {e}")
+                print(t_value)
 
 class FloatingWidgetApp:
     def __init__(self, master):
@@ -134,6 +148,9 @@ class FloatingWidgetApp:
         self.master = master
         self.master.bind("<FocusOut>", self.set_window_out_of_focus)
         self.master.title("Market Monitor")
+        im = Image.open('stocks.png')
+        photo = ImageTk.PhotoImage(im)
+        self.master.wm_iconphoto(True, photo)
         self.master.bind("<Destroy>", self.on_close)
         self.master.resizable(False, False)
 
@@ -148,9 +165,9 @@ class FloatingWidgetApp:
 
     def create_first_group(self):
         widget_item = WidgetItem(self.master)
-        group_frame = tk.Frame(self.master, bg='#f0f0f0', width=600, height=100, borderwidth=1, relief='groove')
+        group_frame = tk.Frame(self.master, bg='#f0f0f0', width=300, height=100, borderwidth=1, relief='groove')
         group_frame.pack(padx=10, pady=2, anchor='w')
-        label = tk.Label(group_frame, text="", padx=10, width=30)
+        label = tk.Label(group_frame, text="", padx=10, width=20)
         label.grid(row=0, column=1)
 
         # Create a Combobox with suggestions inside the group frame
@@ -165,7 +182,7 @@ class FloatingWidgetApp:
         dropdown.bind("<KeyRelease>", widget_item.update_dropdown_suggestions)
 
         # Create an "Add" button inside the group frame
-        add_button = tk.Button(group_frame, text="+", padx=20, command=lambda: self.add_group(widget_item))
+        add_button = tk.Button(group_frame, text="+", padx=27, command=lambda: self.add_group(widget_item))
         add_button.grid(row=0, column=2)
 
         widget_item.group_frame = group_frame
@@ -177,10 +194,10 @@ class FloatingWidgetApp:
 
     def add_group(self, parent):
         widget_item = WidgetItem(self.master)
-        new_group_frame = tk.Frame(self.master, bg='#f0f0f0', width=600, height=100, borderwidth=1, relief='groove')
+        new_group_frame = tk.Frame(self.master, bg='#f0f0f0', width=300, height=100, borderwidth=1, relief='groove')
         new_group_frame.pack(padx=10, pady=2, anchor='w')
 
-        label = tk.Label(new_group_frame, text="", width=30, padx=10)
+        label = tk.Label(new_group_frame, text="", width=20, padx=10)
         label.grid(row=0, column=1)
 
         selected_option = tk.StringVar()
