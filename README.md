@@ -7,7 +7,7 @@ No need to keep checking your phone all time. You can have this tool running alo
 
 # Features
 - Gets realtime data
-- Add/remove stocks
+- Add/remove stocks. Can be entered manually or chosen by dropdown
 - Suggest stock name based on previous inputs
 
 # Installation
