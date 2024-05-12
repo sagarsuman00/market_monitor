@@ -59,15 +59,15 @@ class Market:
         t = datetime.now()
         Time = calendar.timegm(t.timetuple()) - 19800
         val = self.get_response('1',Time)
-        percentage = None
+        change_percent = None
         while(not val): #sometimes server don't give data
             t = datetime.now()
             Time = calendar.timegm(t.timetuple()) - 19800
             val = self.get_response('1',Time)
         if self.y_value:
             change = (val - self.y_value)/self.y_value
-            percentage = f"{change*100:.2f}"
-        return val, percentage
+            change_percent = f"{change*100:.2f}"
+        return val, change_percent
 
     def get_response(self, period, Time):
         Scrip = self.Scrip.replace('&', '%26')
@@ -136,10 +136,10 @@ class WidgetItem:
             self.label.config(text='')
         else:
 
-            t_value, percentage = self.market.get_current_value()
+            t_value, change_percent = self.market.get_current_value()
             try:
-                string = f"{t_value}, {percentage}%"
-                if float(percentage) >= 0:
+                string = f"{t_value}, {change_percent}%"
+                if float(change_percent) >= 0:
                     color = 'green'
                 else:
                     color = 'red'
