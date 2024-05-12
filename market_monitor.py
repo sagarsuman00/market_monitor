@@ -11,7 +11,14 @@ from PIL import Image, ImageTk
 
 data = json.load(open("data.json"))
 indices = data["indices"]
-stocks = data["stocks"]
+session = requests.sessions.Session()
+session.headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Safari/537.36"
+response = session.get('https://www.nseindia.com/api/live-analysis-stocksTraded', timeout=30)
+if response.status_code == 200:
+    x = json.loads(response.text)
+    stocks = [data['symbol'] for data in x['total']['data'][1:] if data['series'] == 'EQ']
+else:
+    stocks = data["stocks"]
 stocks.sort()
 
 def custom_messagebox(title, message):
@@ -52,11 +59,15 @@ class Market:
         t = datetime.now()
         Time = calendar.timegm(t.timetuple()) - 19800
         val = self.get_response('1',Time)
-        if not val: #sometimes server don't give data
+        percentage = None
+        while(not val): #sometimes server don't give data
             t = datetime.now()
             Time = calendar.timegm(t.timetuple()) - 19800
             val = self.get_response('1',Time)
-        return val
+        if self.y_value:
+            change = (val - self.y_value)/self.y_value
+            percentage = f"{change*100:.2f}"
+        return val, percentage
 
     def get_response(self, period, Time):
         Scrip = self.Scrip.replace('&', '%26')
@@ -101,8 +112,6 @@ class WidgetItem:
         else:
             self.market.Scrip = selected.upper()
         self.market.y_value = self.market.get_last_day_value()
-        if self.market.y_value and self.market.Scrip not in stocks:
-            stocks.append(self.market.Scrip)
         self.update_label()
 
     def get_dropdown_text(self, event):
@@ -112,8 +121,6 @@ class WidgetItem:
         else:
             self.market.Scrip = selected.upper()
         self.market.y_value = self.market.get_last_day_value()
-        if self.market.y_value and self.market.Scrip not in stocks:
-            stocks.append(self.market.Scrip)
         self.update_label()
 
     def update_dropdown_suggestions(self, event):
@@ -129,11 +136,10 @@ class WidgetItem:
             self.label.config(text='')
         else:
 
-            t_value = self.market.get_current_value()
+            t_value, percentage = self.market.get_current_value()
             try:
-                change = (t_value - self.market.y_value)/self.market.y_value
-                string = f"{t_value}, {change*100:.2f}%"
-                if change >= 0:
+                string = f"{t_value}, {percentage}%"
+                if float(percentage) >= 0:
                     color = 'green'
                 else:
                     color = 'red'
@@ -202,7 +208,7 @@ class FloatingWidgetApp:
 
         selected_option = tk.StringVar()
         dropdown = ttk.Combobox(new_group_frame, textvariable=selected_option)
-        dropdown['values'] = sorted(stocks)
+        dropdown['values'] = stocks
         dropdown.grid(row=0, column=0)
 
         dropdown.bind("<<ComboboxSelected>>", widget_item.dropdown_callback)
